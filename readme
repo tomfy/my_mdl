@@ -1,0 +1,226 @@
+MDL is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (in the file named 'copying').  
+If not, see <http://www.gnu.org/licenses/>.
+
+#--------------------------------------------------------------#
+#              Citing the program                              #
+#--------------------------------------------------------------#
+
+Please cite this reference:
+
+C. Ané (2011). Detecting phylogenetics breakpoints and discordance 
+from genome-wide alignments for species tree reconstruction. 
+Genome Biology and Evolution, 3:246-258. 
+
+#--------------------------------------------------------------#
+#              Compiling the program                           #
+#--------------------------------------------------------------#
+
+This is version 1.0.
+
+This package includes:
+- a C++ program: mdl
+- a perl script: mdl.pl
+- an R script: overhead.r
+- an example file: align1015.nex
+
+Program structure:
+- This packages requires PAUP*.
+- The perl script "mdl.pl" first calls Paup to calculate the
+  parsimony score of all groups of consecutive sites. This first
+  step can take a very long time. Second, it calls the C++ program
+ "mdl" to get the best partition (or the first k best partitions).
+- The C++ program can be called separately, provided that the group
+  scores are already available from a previous run of "mdl.pl".
+  This is particularly useful to reduce the computing time when 
+  trying the program with varying penalty parameters.
+- The R script overhead.pl contains a few short function to
+  calculate an appropriate range of penatly parameters, given the
+  number of taxa and number of bases (nucleotides vs. amino-acids).
+
+Compiling the C++ program:
+- from the source directory (path/mdl/src), type 'make' to 
+  compile the program. 
+- to make the program executable from everywhere, place the binary 
+  file "mdl" in your personal ~/bin/ folder.
+
+#--------------------------------------------------------------#
+#              Using the perl script mdl.pl                    #
+#--------------------------------------------------------------#
+
+Input:  mdl.pl needs a data file in nexus format and options. 
+
+Output:
+- A .scores file listing the maximum parsimony scores of all groups
+  of consecutive characters. If the option 'ncharbase' is used,
+  then only certain groups of characters are considered, 
+  between any a * ncharbase and b * ncharbase characters.
+- A .partitions file listing the best or the first few best
+  partitions based on the MDL criterion.
+- A .mb file listing the character sets of the best partition,
+  to facilitate further phylogenetic analysis.
+
+Options:
+ dataFile=datafilename       name of input nexus file
+ doParsSearch="yes" or "no"  to include the parsimony search in PAUP. 
+                             "no" can be used to re-run the C++ mdl program only.
+ excludeGaps="yes" or "no"   Should gaps be excluded to calculate the MP scores?
+                             default is "no".
+ gapAsChar="yes" or "no"     Should gaps be treated as an extra chatacter to calculate
+                             the MP scores? This is set to "no" if gaps are excluded.
+                             default is "yes".
+ nCharBase=number
+ nGroupMax=number
+ nBestPart=number
+
+ penalty parameter: this is not an option. It is calculated by mdl.pl
+  based on the number of taxa. The default penalty (overhead) parameter
+  is determined by using decimal places for the number of bits, instead
+  of rounding up all numbers of bits to the nearest integer. 
+  The value used is indicated in the output .partition file.
+  Other penalty values can later be investigated by calling the
+  C++ program separately (see below).
+
+Path to paup and mdl: by default mdl.pl assumes that PAUP is called
+using the command "paup" and that the command "mdl" calls the C++
+mdl program. If necessary, provide the paths by modifying mld.pl.
+
+Examples.
+
+In these examples, the current directory is assumed to contain
+a directory "src" in which "mdl.pl" is located, and a directory
+"examples" in which the data file "align1015.nex" is located. 
+The number of characters in this file is nchar=69039, so the 
+following command constraining 30,000 characters per group will
+run very quickly:
+
+perl src/mdl.pl dataFile=example/align1015.nex doParsSearch=yes ncharbase=30000 ngroupmax=10 nbestpart=1000
+
+In addition to specifying a very large ncharbase, this command 
+also specifies that the number of groups in a block should not
+exceed 10 (this option makes the program run faster, but can
+infer too many breakpoints), and that the best 1000 partitions 
+should be determined.
+
+Output files: 
+
+example/align1015.scores should look like this, listing the scores
+of the 6 possible blocks of groups: (group1: 1-30000, group2: 30001-60000,
+ group3: 60001-69039, group1+2, group2+3, group1+2+3):
+Tree    Length
+1       21413
+Tree    Length
+1       46933
+Tree    Length
+1       52700
+Tree    Length
+1       25515
+Tree    Length
+1       31282
+Tree    Length
+1       5767
+
+example/align1015.partitions should look like this, with comments
+in between [] brackets, and otherwise listing the best partition(s)
+along with their description lengths (DL, smaller is better), 
+number of blocks and positions of inferred breakpoints. In this 
+example, the best partition has 2 blocks, one block from character 
+1 to 30000 and the other block from character 30001 to the end.
+
+[
+Minimum Description Length for genome partitioning
+version 0.2, June 2011
+Copyright (C) 2007-2011 by Cecile Ane
+
+Data: example/align1015.nex
+Ntax=5 Nchar=69039 Nletters=5 b=2.32193
+lgNedge=2.80735, onetreedes=3.90689, stepcost=4.80735, onegroup_overhead=1.39666
+NcharBase=30000 TotalNblocks=3 TotalNgroups=6
+NgroupMax=3 NbestPart=1000
+scorefilename=example/align1015.scores
+Program initiated at Tue Jun 28 17:25:13 2011
+]
+MDLscore Ngroups startingChar_list
+52697.79332216 2 1 30001
+52699.18998324 3 1 30001 60001
+52701.39666108 1 1
+52702.79332216 2 1 60001
+[
+Program ended at Tue Jun 28 17:25:13 2011
+Elapsed time: 0 seconds.
+]
+
+
+example/align1015.mb is created to facilitate further analysis
+on the best partition. This file should look like this:
+
+begin mrbayes;
+
+charset group1 = 1-30000;
+charset group2 = 30001-69039;
+
+end;
+
+To get results on a finer scale, ncharbase needs to be set 
+to a lower value and ngroupmax to a higher value, but the 
+parsimony search will take longer. For this, let the program 
+run in the background using nohup. The next command is for 
+testing purposes (should run quickly) and the second command 
+below is for real analysis.
+
+
+nohup perl src/mdl.pl dataFile=example/align1015.nex doParsSearch=yes ncharbase=10000 ngroupmax=10 nbestpart=1000 >& nohup.out &
+nohup perl src/mdl.pl dataFile=example/align1015.nex doParsSearch=yes ncharbase=70 ngroupmax=99000 nbestpart=1 >& nohup.out &
+
+
+#--------------------------------------------------------------#
+#              Using the C++ program mdl                       #
+#--------------------------------------------------------------#
+
+mdl can be called separately, provided the group scores
+are already available from a previous run of "mdl.pl". This is 
+useful if one wants to very quickly re-run MDL using a different 
+penalty (overhead), or to obtain the first 100 best partitions, etc.
+To get a quick help message, type 
+
+mdl -h 
+
+or if mdl is in the current working directory, type
+
+./mdl -h
+
+Options:
+-ntax      number-of-taxa
+-nchar     number-of-characters                   total alignment length
+-ncharbase number-of-characters-per-block         except for the last block
+-nletters  number-of-letters                      default to 4 for DNA
+-ngroupmax maximum-number-of-groups-in-partitions default to max value
+-nbestpart maximum-number-of-partitions-retained 
+-s         score-bound                            partitions with higher
+                                                  scores will not be kept
+-scorefile file-name-for-group-scores             default to 'scores'. File produced by mdl.pl
+-o         output-file                            default to 'mdl.out' and 'mdl.mb'
+-overhead  one-group-overhead                     default is determined by Ntax
+-h or --help                                      prints this help message and quits
+
+If an error is detected in the way options are declared, the 
+program will print out the help message with option names and quit.
+
+Output: a .partition and a .mb files, as described in the previous section.
+
+Examples of command lines to use mdl (all run very quickly):
+
+mdl -ntax 5 -nchar 69039 -nletters 5 -scorefile example/align1015.scores -nbestpart 10 -overhead 3 -o example/test.partitions -ncharbase 30000
+mdl -ntax 5 -nchar 69039 -nletters 5 -scorefile example/align1015.scores -nbestpart 10 -overhead 3 -s 52705 -o example/test.partitions -ncharbase 30000
+mdl -ntax 5 -nchar 69039 -nletters 5 -scorefile example/align1015.scores -nbestpart 1 -overhead 5 -o example/test.partitions -ncharbase 30000
+
