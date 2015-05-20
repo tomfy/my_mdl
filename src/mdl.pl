@@ -12,7 +12,7 @@ use List::Util qw( min max sum );
 
 
 my $paup = "paup";   # command to call paup. Include appropriate path if needed.
-my $mdl  = "mdl";    # command to call the C++ program mdl. Include path if needed.
+my $mdl  = "~/my_mdl/src/mdl";    # command to call the C++ program mdl. Include path if needed.
 my $doParsSearch = 0;
 my $Ncharbase = 1000;
 my $NgroupMax = 10;
