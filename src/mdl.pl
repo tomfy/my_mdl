@@ -31,34 +31,34 @@ $treeFile = "trees.nex";
 
 #----- Read standard input -----------------------------------------#
 foreach (@ARGV){
-  if (/\bdataFile\s*=\s*([^\s]+)/i){
-    $dataFile=$1;
-    $root=$dataFile;
-    $root =~s/.nex$//;
-  }
-  if (/\bdoParsSearch\s*=\s*(\w+)/i){
-    if ($1 eq "yes"){ $doParsSearch=$1;}
-    elsif ($1 eq "no"){ $doParsSearch=0;}
-    else { die("bad option: doParsSearch = $1\n");}
-  }
-  if (/\bexcludegaps\s*=\s*(\w+)/i){
-    if ($1 eq "yes"){   $excludegaps=1;}
-    elsif ($1 eq "no"){ $excludegaps=0;}
-    else { die("bad option: excludeGaps = $1\n");}
-  }
-  if (/\bgapaschar\s*=\s*(\w+)/i){
-    if ($1 eq "yes"){   $gap_as_character=1;}
-    elsif ($1 eq "no"){ $gap_as_character=0;}
-    else { die("bad option: GapAsChar = $1\n");}
-  }
-  if (/\bncharbase\s*=\s*(\d+)/i){
-    $Ncharbase=$1;
-    if ($Ncharbase<1){ die("invalid NcharBase $Ncharbase");}
-  }
-  if (/\bngroupmax\s*=\s*(\d+)/i){ $NgroupMax=$1;}
-  if (/\bnbestpart\s*=\s*(\d+)/i){ $NbestPart=$1;}
+	if (/\bdataFile\s*=\s*([^\s]+)/i){
+		$dataFile=$1;
+		$root=$dataFile;
+		$root =~s/.nex$//;
+	}
+	if (/\bdoParsSearch\s*=\s*(\w+)/i){
+		if ($1 eq "yes"){ $doParsSearch=$1;}
+		elsif ($1 eq "no"){ $doParsSearch=0;}
+		else { die("bad option: doParsSearch = $1\n");}
+	}
+	if (/\bexcludegaps\s*=\s*(\w+)/i){
+		if ($1 eq "yes"){   $excludegaps=1;}
+		elsif ($1 eq "no"){ $excludegaps=0;}
+		else { die("bad option: excludeGaps = $1\n");}
+	}
+	if (/\bgapaschar\s*=\s*(\w+)/i){
+		if ($1 eq "yes"){   $gap_as_character=1;}
+		elsif ($1 eq "no"){ $gap_as_character=0;}
+		else { die("bad option: GapAsChar = $1\n");}
+	}
+	if (/\bncharbase\s*=\s*(\d+)/i){
+		$Ncharbase=$1;
+		if ($Ncharbase<1){ die("invalid NcharBase $Ncharbase");}
+	}
+	if (/\bngroupmax\s*=\s*(\d+)/i){ $NgroupMax=$1;}
+	if (/\bnbestpart\s*=\s*(\d+)/i){ $NbestPart=$1;}
 	if(/\bminblocksingroup\s*=\s*(\d+)/i){ $MinBlocksInGroup=$1; }
- if(/\bmaxblocksingroup\s*=\s*(\d+)/i){ $MaxBlocksInGroup=$1; }
+	if(/\bmaxblocksingroup\s*=\s*(\d+)/i){ $MaxBlocksInGroup=$1; }
 }
 #-------------------------------------------------------------------#
 
@@ -76,20 +76,46 @@ else{                   $Nletters = $Nsymbols;}
 
 print "dataFile is $dataFile, root is $root, doParsSearch is $doParsSearch
 excludegaps is $excludegaps, gapaschar is gap_as_char, ncharbase is $Ncharbase,
-ngroupmax is $NgroupMax, nbestpart is $NbestPart.\n";
+	    ngroupmax is $NgroupMax, nbestpart is $NbestPart.\n";
 
 #----- Read in the data file to find the Ntax and Nchar total ------#
 open FHi, "<$dataFile" or die "Cannot read file $dataFile :$!";
 while (<FHi>){
-  if (/nchar\s*=\s*(\d+)/i){
-      $Nchar = $1;
-  }
-  if (/ntax\s*=\s*(\d+)/i){
-      $Ntax = $1;
-  }
-  last if ($Nchar and $Ntax);
+	if (/nchar\s*=\s*(\d+)/i){
+		$Nchar = $1;
+	}
+	if (/ntax\s*=\s*(\d+)/i){
+		$Ntax = $1;
+	}
+	last if ($Nchar and $Ntax);
 }
 close FHi;
+
+open FHi, "<$dataFile" or die "Cannot read file $dataFile :$!";
+my @data_lines = <FHi>;
+my @first_lines = ();
+my @last_lines = ();
+while(1){
+	my $line = shift @data_lines;
+	push @first_lines, $line;
+	last if($line =~ /^\s*matrix/);
+}
+print "first lines: \n", join("", @first_lines), "\n";
+my ($got_end, $got_semicolon) = (0, 0);
+while(@data_lines){
+	my $line = pop @data_lines;
+	unshift @last_lines, $line;
+	$got_end = 1 if($line =~ /^\s*end/);
+	$got_semicolon = 1 if($line =~ /^\s*;/);
+	last if($got_end and $got_semicolon);
+}
+print join("", @data_lines), "\n";
+print "last lines: \n";
+print join("", @last_lines), "\n";
+
+print "XXX: \n", alignment_string($Ntaxa, \@data_lines, 100, 300);
+
+exit;
 
 $lastgenesize = $Nchar % $Ncharbase;
 $Ngenes = ($Nchar - $lastgenesize)/$Ncharbase;
@@ -98,54 +124,56 @@ $Ngroup = groupindex($Ngenes,$Ngenes) + 1;
 print "There are $Ntax taxa, $Nchar characters, $Ngroup possible groups and\n";
 print "$Ngenes consecutive small blocks of (about) equal size $Ncharbase (prior to excluding gaps).\n";
 
+
+
 if($doParsSearch){
 #---------  Make the paup file ---------------#
- unlink($scoreFile);
- unlink($treeFile);
+	unlink($scoreFile);
+	unlink($treeFile);
 
- open FHo, ">", "$paupFileName";
- print FHo "#NEXUS\n\nset warnroot=no warntree=no warnTsave=no ";
- print FHo "increase=no maxtrees=$Ngroup monitor=no notifybeep=no;\n";
- print FHo "execute $dataFile;\n\n";
- print FHo "begin paup;\n";
- if ($gap_as_character){
-     print FHo "pset gapmode=newstate;\n";
- }
- # print "NgroupMax: $NgroupMax  Ngenes: $Ngenes \n";
- foreach $startblock (1..$Ngenes){
-	my $min_block = $startblock + $MinBlocksInGroup-1;
-	my $max_block = min($Ngenes, $startblock + $MaxBlocksInGroup-1);
-	# print "start_block, min_block, Ngenes:  [$startblock]  [$min_block] [$max_block] [$Ngenes] \n";
-  foreach $endblock ($min_block..$max_block){
-   # if ($endblock eq 1) last;
-   # for testing purposes
-   $start = startpoint($startblock);
-   $end   = endpoint($endblock);
+	open FHo, ">", "$paupFileName";
+	print FHo "#NEXUS\n\nset warnroot=no warntree=no warnTsave=no ";
+	print FHo "increase=no maxtrees=$Ngroup monitor=no notifybeep=no;\n";
+	print FHo "execute $dataFile;\n\n";
+	print FHo "begin paup;\n";
+	if ($gap_as_character){
+		print FHo "pset gapmode=newstate;\n";
+	}
+# print "NgroupMax: $NgroupMax  Ngenes: $Ngenes \n";
+	foreach $startblock (1..$Ngenes){
+		my $min_block = $startblock + $MinBlocksInGroup-1;
+		my $max_block = min($Ngenes, $startblock + $MaxBlocksInGroup-1);
+# print "start_block, min_block, Ngenes:  [$startblock]  [$min_block] [$max_block] [$Ngenes] \n";
+		foreach $endblock ($min_block..$max_block){
+# if ($endblock eq 1) last;
+# for testing purposes
+			$start = startpoint($startblock);
+			$end   = endpoint($endblock);
 
-   print FHo "include $start-$end / only;\n";
-   if($excludegaps){ print FHo "exclude missambig;\n";}
-   print FHo "hsearch collapse=no;\n";
+			print FHo "include $start-$end / only;\n";
+			if($excludegaps){ print FHo "exclude missambig;\n";}
+			print FHo "hsearch collapse=no;\n";
 #	print FHo "describetrees  ;\n";
-   print FHo "Pscores  1 / scorefile=$scoreFile append=yes;\n";
-   if ($savetrees) {
-     print FHo "savetrees from=1 to=1 file=$treeFile format=altnexus append=yes;\n";
-   }
-   print FHo "\n";
-  }
- }
+			print FHo "Pscores  1 / scorefile=$scoreFile append=yes;\n";
+			if ($savetrees) {
+				print FHo "savetrees from=1 to=1 file=$treeFile format=altnexus append=yes;\n";
+			}
+			print FHo "\n";
+		}
+	}
 
- if ($savetrees) {
-  print FHo "gettrees file=$treeFile allblocks=yes;\n";
-  print FHo "savetrees file=$alltreeFile format=altnexus replace=yes;\n";
- }
- print FHo "quit;\nend; [paup]";
- close FHo;
+	if ($savetrees) {
+		print FHo "gettrees file=$treeFile allblocks=yes;\n";
+		print FHo "savetrees file=$alltreeFile format=altnexus replace=yes;\n";
+	}
+	print FHo "quit;\nend; [paup]";
+	close FHo;
 
 #-------- run the paup file -----------#
- system("$paup $paupFileName");
+	system("$paup $paupFileName");
 
- # clean up
- # unlink($paupFileName);
+# clean up
+# unlink($paupFileName);
 } # end of: if($doParsSearch)
 
 
@@ -158,19 +186,19 @@ for $startblock (1..$Ngenes){
 #print "NgroupMax: [$NgroupMax]\n";
 	my $zzz = $startblock + $NgroupMax-1;
 #print "zzz: $zzz\n";
-my $min_block = $startblock + $MinBlocksInGroup-1;
-my $max_block = min($Ngenes, $startblock + $MaxBlocksInGroup-1);
-for $endblock ($startblock..$Ngenes){
-if($endblock >= $min_block and $endblock <= $max_block){
-   my $line1 = shift @score_lines;
-	my $line2 = shift @score_lines;
-	push @score_lines_padded, $line1;
-	push @score_lines_padded, $line2;
-}else{
-	push @score_lines_padded, 'Tree   Length';
-	push @score_lines_padded, '1    99999999';
-}
-}
+	my $min_block = $startblock + $MinBlocksInGroup-1;
+	my $max_block = min($Ngenes, $startblock + $MaxBlocksInGroup-1);
+	for $endblock ($startblock..$Ngenes){
+		if($endblock >= $min_block and $endblock <= $max_block){
+			my $line1 = shift @score_lines;
+			my $line2 = shift @score_lines;
+			push @score_lines_padded, $line1;
+			push @score_lines_padded, $line2;
+		}else{
+			push @score_lines_padded, 'Tree   Length';
+			push @score_lines_padded, '1    99999999';
+		}
+	}
 }
 my $new_score_file_name = $scoreFile . "_x";
 open my $FHs, ">", "$new_score_file_name";
@@ -193,19 +221,38 @@ system("$mdl $mdl_dataoptions $mdl_runoptions");
 
 #-------------   subroutines -----------------------------#
 sub startpoint {
-  my ($gene) = @_;
-  my $startpoint = 1+($gene-1) * $Ncharbase;
-  return $startpoint;
+	my ($gene) = @_;
+	my $startpoint = 1+($gene-1) * $Ncharbase;
+	return $startpoint;
 }
 sub endpoint {
-  my ($gene) = @_;
-  my $endpoint = $Nchar;
-  if ($gene<$Ngenes){ $endpoint = $gene * $Ncharbase};
-  return $endpoint;
+	my ($gene) = @_;
+	my $endpoint = $Nchar;
+	if ($gene<$Ngenes){ $endpoint = $gene * $Ncharbase};
+	return $endpoint;
 }
 sub groupindex {
-  my ($start,$end)=@_;
-  my $ind = $start*$Ngenes - ($start*($start-1)/2) - ($Ngenes-$end) -1;
-  return $ind;
+	my ($start,$end)=@_;
+	my $ind = $start*$Ngenes - ($start*($start-1)/2) - ($Ngenes-$end) -1;
+	return $ind;
 }
 
+
+sub alignment_string{
+	my $n_taxa = shift;
+	my $lines = shift; # array ref
+		my $first_char = shift;
+	my $last_char = shift;
+
+# assume 50 chars per line (except for possibly at very end)
+# and make $first_char % 50 be 1, $last_char % 50 be 0.
+# also assume 2 blank lines after n_taxa lines of sequence
+	$first_char = 50 * int($first_char/50) + 1;
+	$last_char = 50 * int($last_char/50);
+
+	my $chars_so_far = 0;
+	my $first_line_index = int($first_char/50) * 7;
+	my $last_line_index = int($last_char/50) * 7 - 1;
+$last_line_index = min($last_line_index, scalar @$lines - 1);
+	return join("", @$lines[$first_line_index .. $last_line_index]);
+}
