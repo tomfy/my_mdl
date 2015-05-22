@@ -196,7 +196,7 @@ if ($doParsSearch) {
             open FHo, ">", "$paupFileName";
             print FHo "#NEXUS\n\nset warnroot=no warntree=no warnTsave=no ";
             print FHo "increase=no maxtrees=$Ngroup monitor=no notifybeep=no;\n";
-            print FHo "execute $dataFile;\n\n";
+            print FHo "execute $seqFileName;\n\n";
             print FHo "begin paup;\n";
             if ($gap_as_character) {
                print FHo "pset gapmode=newstate;\n";
@@ -220,9 +220,9 @@ if ($doParsSearch) {
             close FHo;
 
             #-------- run the paup file -----------#
-            #	system("$paup $paupFileName");
+            system("$paup $paupFileName");
          } else {
-            $scores_string = "Tree  Length   $startblock $min_block $max_block $endblock \n" . "1  $bigscore\n";
+		 $scores_string = "Tree  Length \n" . "1  $bigscore\n";
             open my $FH2, ">>", "$scoreFile" or die "couldnt open $scoreFile for writing (append).\n";
             print $FH2 $scores_string;
             close $FH2;
@@ -232,35 +232,6 @@ if ($doParsSearch) {
    # clean up
    # unlink($paupFileName);
 }  # end of: if($doParsSearch)
-
-
-# # print "Ngroupmax: [$NgroupMax]\n";
-# # print "NgroupMax+1: ", $NgroupMax+1, "\n";
-# my $paupout_scores = `cat $scoreFile`;
-# my @score_lines = split("\n", $paupout_scores);
-# my @score_lines_padded  =  ();
-# for $startblock (1..$Ngenes){
-# #print "NgroupMax: [$NgroupMax]\n";
-# 	my $zzz = $startblock + $NgroupMax-1;
-# #print "zzz: $zzz\n";
-# 	my $min_block = $startblock + $MinBlocksInGroup-1;
-# 	my $max_block = min($Ngenes, $startblock + $MaxBlocksInGroup-1);
-# 	for $endblock ($startblock..$Ngenes){
-# 		if($endblock >= $min_block and $endblock <= $max_block){
-# 			my $line1 = shift @score_lines;
-# 			my $line2 = shift @score_lines;
-# 			push @score_lines_padded, $line1;
-# 			push @score_lines_padded, $line2;
-# 		}else{
-# 			push @score_lines_padded, 'Tree   Length';
-# 			push @score_lines_padded, '1    99999999';
-# 		}
-# 	}
-# }
-# my $new_score_file_name = $scoreFile . "_x";
-# open my $FHs, ">", "$new_score_file_name";
-# print $FHs (join("\n", @score_lines_padded), "\n");
-# close $FHs;
 
 
 #-------- run the C program -----------#

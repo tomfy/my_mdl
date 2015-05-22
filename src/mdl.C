@@ -75,8 +75,8 @@ void readFile(vector<double> &groupscore, RunParameters &runpar)
     if (line_even){
       f >> treenb >> score;
       groupscore.push_back(score);
-      //cout.precision(8);
-      //cout<<fixed<<" read group score = "<<score<<endl;
+      // cout.precision(8);
+      // cout<<fixed<<" read group score = "<<score<<endl;
     } /* then discard the end of the line */
     do {f.get(tempc);} while (tempc !='\n' && !f.eof() && f.good());
     if(f.fail()) break;
