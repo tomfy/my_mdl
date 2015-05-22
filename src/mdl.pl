@@ -150,7 +150,7 @@ while (1) {
 my $first_lines_string = join("", @first_lines);
 $first_lines_string =~ /nchar=(\d+)/;
 my $Ntotalchar = $1;
-print "first lines: \n", "$first_lines_string\n";
+# print "first lines: \n", "$first_lines_string\n";
 my ($got_end, $got_semicolon) = (0, 0);
 while (@data_lines) {
    my $line = pop @data_lines;

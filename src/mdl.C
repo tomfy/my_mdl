@@ -85,7 +85,7 @@ void readFile(vector<double> &groupscore, RunParameters &runpar)
   }
   f.close();
   unsigned long Ngroups = groupscore.size();
-  cerr << "Ngroups: " << Ngroups << endl;
+  // cerr << "Ngroups: " << Ngroups << endl;
   runpar.setTotalNgroups(Ngroups);
   cout<< "done." << endl;
 }
