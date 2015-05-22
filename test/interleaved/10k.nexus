@@ -2,7 +2,7 @@
 [TITLE: NoName]
 
 begin data;
-dimensions ntax=5 nchar=10000;
+dimensions ntax=5 nchar=9990;
 format interleave=yes datatype=dna gap=-;
 matrix
 yp                 CCTGTGACCA AATGAATCCA AATTATGAGA AATGCGGATA GGTTATACTA 
@@ -1398,11 +1398,11 @@ pim                GGGCGTGTGT GAAATCCCTG ATGACCAGGT GTAGGTGAAA TTATGTGTAC
 potato             ---------- ---------- ---------- ---------- -TATATATAT 
 
 
-yp                 GCATGAGAAT AAGCGATGAC GTGGATGTGT TTTATTTTGT ATACTTGTTG 
-heinz              GCATGAGAAT AAGCGATGAC GTGGATGTGT TTTATTTTGT ATACTTGTTG 
-gal                GCATGAGAAT AAGCGATGAC GTGGATGTGT TTTATTTTGT ATACTTGTTG 
-pim                GCATGAGAAT AAGCGATGAC GTGGATGTGT TTTATTTTGT ATACTTGTTG 
-potato             ACA------- ---------- ---------- --TATTT--- ---------- 
+yp                 GCATGAGAAT AAGCGATGAC GTGGATGTGT TTTATTTTGT  
+heinz              GCATGAGAAT AAGCGATGAC GTGGATGTGT TTTATTTTGT  
+gal                GCATGAGAAT AAGCGATGAC GTGGATGTGT TTTATTTTGT  
+pim                GCATGAGAAT AAGCGATGAC GTGGATGTGT TTTATTTTGT  
+potato             ACA------- ---------- ---------- --TATTT--- 
 
 
 ;
