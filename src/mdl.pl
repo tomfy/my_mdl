@@ -14,10 +14,10 @@ use List::Util qw( min max sum );
 my $paup = "paup"; # command to call paup. Include appropriate path if needed.
 my $mdl  = "~/my_mdl/src/mdl"; # command to call the C++ program mdl. Include path if needed.
 my $doParsSearch = 0;
-my $Ncharbase = 1000;
-my $NgroupMax = 10;
+my $Ncharbase = 10000;
+my $NgroupMax = 1000;
 my $NbestPart = 25;
-my $MinBlocksInGroup = 4;
+my $MinBlocksInGroup = 1;
 my $MaxBlocksInGroup = 12;
 my $bigscore = 999999999;
 my $seqFileName = 'sequences_tmp.nexus';
@@ -123,7 +123,7 @@ if ($excludegaps eq 0) {
 
 print "dataFile is $dataFile, root is $root, doParsSearch is $doParsSearch
 excludegaps is $excludegaps, gapaschar is gap_as_char, ncharbase is $Ncharbase,
-	    ngroupmax is $NgroupMax, nbestpart is $NbestPart.\n";
+            ngroupmax is $NgroupMax, nbestpart is $NbestPart.\n";
 
 #----- Read in the data file to find the Ntaxa and Nchar total ------#
 open FHi, "<$dataFile" or die "Cannot read file $dataFile :$!";
@@ -169,13 +169,39 @@ $Ngroup = groupindex($Ngenes,$Ngenes) + 1;
 print "There are $Ntaxa taxa, $Nchar characters, $Ngroup possible groups and\n";
 print "$Ngenes consecutive small blocks of (about) equal size $Ncharbase (prior to excluding gaps).\n";
 
+open my $FHo, ">", "$paupFileName";
+print $FHo "#NEXUS\n\nset warnroot=no warntree=no warnTsave=no ";
+print $FHo "increase=no maxtrees=$Ngroup monitor=no notifybeep=no;\n";
+print $FHo "execute $seqFileName;\n\n";
+print $FHo "begin paup;\n";
+if ($gap_as_character) {
+   print $FHo "pset gapmode=newstate;\n";
+}
+# print $FHo "include $start-$end / only;\n";
+if ($excludegaps) {
+   print $FHo "exclude missambig;\n";
+}
+print $FHo "hsearch collapse=no;\n";
+#	print $FHo "describetrees  ;\n";
+print $FHo "Pscores  1 / scorefile=$scoreFile append=yes;\n";
+if ($savetrees) {
+   print $FHo "savetrees from=1 to=1 file=$treeFile format=altnexus append=yes;\n";
+}
+print $FHo "\n";
+if ($savetrees) {
+   print $FHo "gettrees file=$treeFile allblocks=yes;\n";
+   print $FHo "savetrees file=$alltreeFile format=altnexus replace=yes;\n";
+}
+print $FHo "quit;\nend; [paup]";
+close $FHo;
+
 
 my $scores_string = '';
 if ($doParsSearch) {
    unlink($scoreFile);
    unlink($treeFile);
    for $startblock (1..$Ngenes) {
-      my $zzz = $startblock + $NgroupMax-1;
+#  my $zzz = $startblock + $NgroupMax-1;
       my $min_block = $startblock + $MinBlocksInGroup-1;
       my $max_block = min($Ngenes, $startblock + $MaxBlocksInGroup-1);
       for $endblock ($startblock..$Ngenes) {
@@ -184,53 +210,24 @@ if ($doParsSearch) {
             my $last_char = min(int($Ncharbase * $endblock - 1), $Ntotalchar-1);
             my $align_string = alignment_string($Ntaxa, \@data_lines, $first_char, $last_char);
             open my $FH1, ">", "$seqFileName" or die "Couldnt open $seqFileName for writing.\n";
-           my $Nchars_in_group = $last_char - $first_char + 1;
-  #          print $first_lines_string, "\n";
+            my $Nchars_in_group = $last_char - $first_char + 1;
             $first_lines_string =~ s/nchar=\d+\s*;/nchar=$Nchars_in_group;/;
-# print $first_lines_string, "\n";
             print $FH1 $first_lines_string;
             print $FH1 $align_string;
             print $FH1 join("", @last_lines);
             close $FH1;
-
-            open FHo, ">", "$paupFileName";
-            print FHo "#NEXUS\n\nset warnroot=no warntree=no warnTsave=no ";
-            print FHo "increase=no maxtrees=$Ngroup monitor=no notifybeep=no;\n";
-            print FHo "execute $seqFileName;\n\n";
-            print FHo "begin paup;\n";
-            if ($gap_as_character) {
-               print FHo "pset gapmode=newstate;\n";
-            }
-            # print FHo "include $start-$end / only;\n";
-            if ($excludegaps) {
-               print FHo "exclude missambig;\n";
-            }
-            print FHo "hsearch collapse=no;\n";
-            #	print FHo "describetrees  ;\n";
-            print FHo "Pscores  1 / scorefile=$scoreFile append=yes;\n";
-            if ($savetrees) {
-               print FHo "savetrees from=1 to=1 file=$treeFile format=altnexus append=yes;\n";
-            }
-            print FHo "\n";
-            if ($savetrees) {
-               print FHo "gettrees file=$treeFile allblocks=yes;\n";
-               print FHo "savetrees file=$alltreeFile format=altnexus replace=yes;\n";
-            }
-            print FHo "quit;\nend; [paup]";
-            close FHo;
-
-            #-------- run the paup file -----------#
+#-------- run the paup file -----------#
             system("$paup $paupFileName");
          } else {
-		 $scores_string = "Tree  Length \n" . "1  $bigscore\n";
+            $scores_string = "Tree  Length \n" . "1  $bigscore\n";
             open my $FH2, ">>", "$scoreFile" or die "couldnt open $scoreFile for writing (append).\n";
             print $FH2 $scores_string;
             close $FH2;
          }
       }
    }
-   # clean up
-   # unlink($paupFileName);
+# clean up
+# unlink($paupFileName);
 }  # end of: if($doParsSearch)
 
 
@@ -271,15 +268,12 @@ sub groupindex {
 
 sub alignment_string{
    my $n_taxa = shift;
-   my $lines = shift;           # array ref
-   my $first_char = shift; # 0-based
-   my $last_char = shift;
+   my $lines = shift;       # array ref
+      my $first_char = shift;  # 0-based
+      my $last_char = shift;
 
-   # assume 50 chars per line (except for possibly at very end)
-   # and make $first_char % 50 be 1, $last_char % 50 be 0.
-   # also assume 2 blank lines after n_taxa lines of sequence
- #  $first_char = 50 * int($first_char/50);
-#   $last_char = 50 * int($last_char/50)-1;
+# assume 50 chars per line (except for possibly at very end)
+# also assume 2 blank lines after n_taxa lines of sequence
 
    my $chars_so_far = 0;
    my $first_line_index = int($first_char/50) * 7;
@@ -287,14 +281,5 @@ sub alignment_string{
    print "$first_char $last_char $first_line_index $last_line_index \n";
    $last_line_index = min($last_line_index, scalar @$lines - 1);
    my @selected_lines = @$lines[$first_line_index .. $last_line_index];
-   # for(1..4){
-   #    my $a_line = $selected_lines[-$_];
-   #    if($a_line =~ /\S/){
-   #       $a_line =~ /^\s*\S+\s+(.*)/;
-   #       my $seq = $1;
-   #       $seq =~ s/\s+//g;
-   #       my $
-   #    }
-   # }
    return join("", @selected_lines);
 }
