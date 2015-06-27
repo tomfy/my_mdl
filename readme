@@ -106,6 +106,20 @@ run very quickly:
 
 perl src/mdl.pl dataFile=example/align1015.nex doParsSearch=yes ncharbase=30000 ngroupmax=10 nbestpart=1000
 
+Now it is possible to specify min and max numbers of 'blocks' to include in a 'groups' to be considered. For example:
+
+perl ~/my_mdl/src/mdlx.pl dataFile=g1_400k.nexus doParsSearch=yes ncharbase=10000 minblocksingroup=2 maxblocksingroup=20
+
+In this case the input alignment is first divided into blocks of length 10000, and we then consider partitions which divide the
+alignment into groups whose lengths are 20000, 30000, ..., 190000, 200000, i.e. 2 to 20 blocks long. 
+If we want to input long alignments (e.g. 1 million characters) it gets very slow to use Ane's original algorithm. 
+We may feel that if a group is 200k long, it is long enough to get a reasonable estimate of its phylogeny, 
+as long as the breakpoints are intelligently placed. In other words it is more important to allow the breakpoints 
+to be placed (with a relatively fine resolution, e.g. 10k) in an intelligent way, according to the mdl criterion, 
+than to insist that arbitrarily long groups (up to the length of the input alignment) be allowed.
+
+
+
 In addition to specifying a very large ncharbase, this command 
 also specifies that the number of groups in a block should not
 exceed 10 (this option makes the program run faster, but can
