@@ -117,6 +117,11 @@ We may feel that if a group is 200k long, it is long enough to get a reasonable 
 as long as the breakpoints are intelligently placed. In other words it is more important to allow the breakpoints 
 to be placed (with a relatively fine resolution, e.g. 10k) in an intelligent way, according to the mdl criterion, 
 than to insist that arbitrarily long groups (up to the length of the input alignment) be allowed.
+Setting ngroupmax to a smallish number doesn't save much time; the parsimony scores of larger groups are still calculated,
+and this is a slow process. ngroupmax=10, for example, just means that after
+the parsimony scores are found for all potential groups, only those with 10 or fewer blocks are considered
+by the (C++) mdl program, but that is quite quick in any case. The parameter maxblocksingroup is a way of skipping
+doing the parsimony scores for large groups.  
 
 
 
@@ -150,6 +155,45 @@ along with their description lengths (DL, smaller is better),
 number of blocks and positions of inferred breakpoints. In this 
 example, the best partition has 2 blocks, one block from character 
 1 to 30000 and the other block from character 30001 to the end.
+
+When minblocksingroup > 1, or maxblocksingroup is less than (alignment_length/ncharbase), some
+groups will not have their parsimony scores calculated; instead the parsimony score is just set to
+some very large number, so the .scores output file looks like:
+
+Tree  Length 
+1  999999999
+Tree    Length
+1       6687
+Tree    Length
+1       14963
+Tree    Length
+1       23647
+Tree    Length
+1       32995
+Tree    Length
+1       42937
+Tree  Length 
+1  999999999
+Tree  Length 
+1  999999999
+Tree  Length 
+1  999999999
+Tree  Length 
+1  999999999
+Tree  Length 
+1  999999999
+Tree    Length
+1       11032
+Tree    Length
+...
+
+In this case minblocksingroup was 1, maxblocksingroup was 6, ncharbase was 10, and the length of the alignment was 100k. 
+First are the scores for groups starting at col. 1, with lengths 10000, 20000, 30k, ... 90k, 100k. 
+For lengths 10k, and 70k,80k, 90k, 100k the score is 999999999. 
+
+
+
+
 
 [
 Minimum Description Length for genome partitioning
